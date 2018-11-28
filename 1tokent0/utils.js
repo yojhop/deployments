@@ -71,14 +71,26 @@ function saveHash(sha2,sha512){
 function putFilesToOss(enviroment){
     return new Promise((resolve,reject)=>{
         let sourceFolder='./1token-t0/build'
-    let OSSFolder=enviroment==='product'?'t0-deploy/win32':'t0-dev-deploy/win32'
-    
+    let OSSFolder
+    switch(enviroment){
+        case 'product':
+            OSSFolder='t0-deploy/win32'
+            break
+        case 'test':
+            OSSFolder='t0-test-deploy/win32'
+            break
+        case 'internal':
+            OSSFolder='t0-internal-deploy/win32'
+            break
+    }
+    let downLoadFolder='download'
     let OSS = require('ali-oss');
     let client = new OSS({
         endpoint: 'http://oss-cn-shanghai.aliyuncs.com',
-        accessKeyId: 'xxxx',
-        accessKeySecret: 'aaaa'
+        accessKeyId: 'xxx',
+        accessKeySecret: 'aaa'
     })
+    
     client.useBucket('otimg')
         readConfig().then(config=>{
             const fileNames=[`1TokenT0-Setup-${config.version}.exe`,`1TokenT0-Setup-${config.version}.exe.blockmap`,'releaseNotes.txt','latest.yml']
@@ -86,6 +98,9 @@ function putFilesToOss(enviroment){
                 const promises=[]
                 for(let file of fileNames){
                     promises.push(client.put(`${OSSFolder}/${file}`, `${sourceFolder}/${file}`,{timeout:1800000}))
+                }
+                if(enviroment==='product'){
+                    promises.push(client.put(`${downLoadFolder}/1TokenT0-Setup-${config.version}.exe`, `${sourceFolder}/1TokenT0_Setup_v${config.version}.exe`,{timeout:1800000}))
                 }
                 retryAll(promises,3).then(({ succs, fails })=>{
                     if(succs.length===4){

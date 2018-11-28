@@ -1,9 +1,14 @@
-// const {putFilesToOss}=require('./utils')
-
-// putFilesToOss().then(res=>{
-//     console.log('put files to oss succeed')
-// }).catch(err=>{
-//     console.log('put files to oss failed',err)
-// })
-// https://otimg.oss-cn-shanghai.aliyuncs.com/t0-deploy/win32
-console.log(process.argv[2])
+const { createHash } =require('crypto')
+function hashQuickPass() {
+//   return new Promise((resolve, reject) => {
+  const hash = createHash('sha512')
+  hash.setEncoding('base64')
+  hash.update('123')
+  console.log(hash.digest('hex'))
+  //hash.update('456')
+  //console.log(hash.digest('hex'))
+  //return hash('test')
+//   })
+}
+hashQuickPass()
+hashQuickPass()
