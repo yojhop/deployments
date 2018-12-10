@@ -1,0 +1,1 @@
+node ./deployment.js 1token-t0 1.5.4-test-2 test

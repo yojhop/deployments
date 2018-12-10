@@ -4,16 +4,15 @@ const { createHash } =require( "crypto")
 const { createReadStream } =require ("fs")
 const {retryAll}=require('./promiseUtils')
 
-function cloneProject(){
+function cloneProject({project,user,password}){
     return new Promise((resolve,reject)=>{
-        exec('git clone http://yojhop:cainiao97@github.com/qbtrade/1token-t0.git',(error, stdout, stderr) => {
+        exec(`git clone http://${user}:${password}@github.com/qbtrade/${project}.git`,(error, stdout, stderr) => {
             if (error) {
                 reject(error)
             }
             else{
                 resolve()
             }
-            
         })
     })
 }
@@ -32,10 +31,29 @@ function hashFile(file, algorithm = "sha512", encoding = "base64", options) {
         .pipe(hash, {end: false})
     })
 }
-function produceHash(){
+function modifyPackage({config,packagePath,project}){
     return new Promise((resolve,reject)=>{
-        readConfig().then(config=>{
-            const filePath=`./1token-t0/build/1TokenT0-Setup-${config.version}.exe`
+        if(typeof packagePath==='undefined'&&project){
+            packagePath=`./${project}/package.json`
+        }
+        if(!packagePath||!config){
+            reject('packagePath not set or config not set')
+            return
+        }
+        const fs = require('fs')
+        const verfile = fs.readFileSync(packagePath, 'utf8')
+        let obj=JSON.parse(verfile)
+        Object.assign(obj,config)
+        let pretty=JSON.stringify(obj,null,2)
+        fs.writeFileSync(packagePath,pretty)
+        resolve()
+    })
+    
+}
+function produceHash(project){
+    return new Promise((resolve,reject)=>{
+        readConfig(project).then(config=>{
+            const filePath=`./${project}/build/1TokenT0-Setup-${config.version}.exe`
             const sha2Promise=hashFile(filePath,algorithm = "sha256",'hex')
             const sha512Promise=hashFile(filePath,algorithm = "sha512",'base64')
             Promise.all([sha2Promise,sha512Promise]).then(res=>{
@@ -48,10 +66,10 @@ function produceHash(){
         })
     })
 }
-function saveHash(sha2,sha512){
+function saveHash({project,sha2,sha512}){
     return new Promise((resolve,reject)=>{
         try{
-            const filePath='./1token-t0/build/latest.yml'
+            const filePath=`./${project}/build/latest.yml`
             const fs = require('fs')
             const verfile = fs.readFileSync(filePath, 'utf8')
             yaml = require('js-yaml')
@@ -68,11 +86,18 @@ function saveHash(sha2,sha512){
         }
     })
 }
-function putFilesToOss(enviroment){
+function readLocalConfig(){
+    const filePath='./localConfig.yml'
+    const fs = require('fs')
+    const configContent = fs.readFileSync(filePath, 'utf8')
+    yaml = require('js-yaml')
+    return yaml.safeLoad(configContent)
+}
+function putFilesToOss({t0env,project}){
     return new Promise((resolve,reject)=>{
-        let sourceFolder='./1token-t0/build'
+        let sourceFolder=`./${project}/build`
     let OSSFolder
-    switch(enviroment){
+    switch(t0env){
         case 'product':
             OSSFolder='t0-deploy/win32'
             break
@@ -82,17 +107,21 @@ function putFilesToOss(enviroment){
         case 'internal':
             OSSFolder='t0-internal-deploy/win32'
             break
+        default:
+            reject(`unknown enviroment ${t0env}`)
+            return
     }
     let downLoadFolder='download'
     let OSS = require('ali-oss');
-    let client = new OSS({
-        endpoint: 'http://oss-cn-shanghai.aliyuncs.com',
-        accessKeyId: 'xxx',
-        accessKeySecret: 'aaa'
-    })
     
+    let config=readLocalConfig()
+    let client = new OSS({
+        endpoint: config.endpoint,
+        accessKeyId: config.accessKeyId,
+        accessKeySecret: config.accessKeySecret
+    })
     client.useBucket('otimg')
-        readConfig().then(config=>{
+        readConfig(project).then(config=>{
             const fileNames=[`1TokenT0-Setup-${config.version}.exe`,`1TokenT0-Setup-${config.version}.exe.blockmap`,'releaseNotes.txt','latest.yml']
             try{
                 const promises=[]
@@ -123,29 +152,6 @@ function putFilesToOss(enviroment){
         })
     })
 }
-function moveFiles(){
-    let sourceFolder='./1token-t0/build'
-    let destFolder='C:/Users/amos/Desktop/update server/public/win32'
-    
-    return new Promise((resolve,reject)=>{
-        const fs = require('fs')
-        readConfig().then(config=>{
-            const fileNames=[`1TokenT0-Setup-${config.version}.exe`,`1TokenT0-Setup-${config.version}.exe.blockmap`,'latest.yml']
-            try{
-                for(let file of fileNames){
-                    fs.writeFileSync(`${destFolder}/${file}`, fs.readFileSync(`${sourceFolder}/${file}`))
-                }
-                resolve()
-            }
-            catch(err){
-                reject(err)
-            }
-        }).catch(err=>{
-            reject(err)
-        })
-    })
-    
-}
 function installDeploymentDeps(){
     return new Promise((resolve,reject)=>{
         exec('npm install',(error,stdout,stderr)=>{
@@ -158,28 +164,15 @@ function installDeploymentDeps(){
         })
     })
 }
-function installProjectDeps(){
+function installProjectDeps(project){
     return new Promise((resolve,reject)=>{
-        exec('cd ./1token-t0 && npm install',(error, stdout, stderr) => {
+        exec(`cd ./${project} && npm install`,(error, stdout, stderr) => {
             if(error){
                 reject(error)
             }
             else{
                 resolve()
             }
-        })
-    })
-}
-function cloneServer(){
-    return new Promise((resolve,reject)=>{
-        exec('git clone http://yojhop:cainiao97@github.com/yojhop/T0UpdateServer.git',(error, stdout, stderr) => {
-            if (error) {
-                reject(error)
-            }
-            else{
-                resolve()
-            }
-            
         })
     })
 }
@@ -195,9 +188,9 @@ function installServerDeps(){
         })
     })
 }
-function pullT0Project(){
+function pullT0Project(project){
     return new Promise((resolve,reject)=>{
-        exec('cd 1token-t0 && git checkout . && git pull',(error, stdout, stderr) => {
+        exec(`cd ${project} && git checkout . && git pull`,(error, stdout, stderr) => {
             if (error) {
                 reject(error)
             }
@@ -208,9 +201,9 @@ function pullT0Project(){
         })
     })
 }
-function buildT0(){
+function buildT0(project){
     return new Promise((resolve,reject)=>{
-        exec('cd 1token-t0 && npm run build',(error, stdout, stderr) => {
+        exec(`cd ${project} && npm run build`,(error, stdout, stderr) => {
             if (error) {
                 reject(error)
             }
@@ -220,10 +213,10 @@ function buildT0(){
         })
     })
 }
-function readConfig(){
+function readConfig(project){
     return new Promise((resolve,reject)=>{
         var fs = require("fs");
-        fs.readFile('./1token-t0/package.json',  (err, data)=> {
+        fs.readFile(`./${project}/package.json`,  (err, data)=> {
             if (err) {
                 reject(err)
             }
@@ -233,10 +226,10 @@ function readConfig(){
         })
     })
 }
-function sign(){
+function sign(project){
     return new Promise((resolve,reject)=>{
-        readConfig().then(config=>{
-            exec(`signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a "./1token-t0/build/1TokenT0-Setup-${config.version}.exe"`,(error, stdout, stderr) => {
+        readConfig(project).then(config=>{
+            exec(`signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a ./${project}/build/1TokenT0-Setup-${config.version}.exe"`,(error, stdout, stderr) => {
                 if (error) {
                     reject(error)
                 }
@@ -250,4 +243,4 @@ function sign(){
     })
 }
 
-module.exports= {putFilesToOss,moveFiles,saveHash,produceHash,installDeploymentDeps,cloneProject,installProjectDeps,cloneServer,installServerDeps,sign,readConfig,buildT0,pullT0Project}
+module.exports= {readLocalConfig,modifyPackage,putFilesToOss,saveHash,produceHash,installDeploymentDeps,cloneProject,installProjectDeps,installServerDeps,sign,readConfig,buildT0,pullT0Project}
