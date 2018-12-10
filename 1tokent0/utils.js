@@ -128,7 +128,7 @@ function putFilesToOss({t0env,project}){
                 for(let file of fileNames){
                     promises.push(client.put(`${OSSFolder}/${file}`, `${sourceFolder}/${file}`,{timeout:1800000}))
                 }
-                if(enviroment==='product'){
+                if(t0env==='product'){
                     promises.push(client.put(`${downLoadFolder}/1TokenT0_Setup_v${config.version}.exe`, `${sourceFolder}/1TokenT0-Setup-${config.version}.exe`,{timeout:1800000}))
                 }
                 retryAll(promises,3).then(({ succs, fails })=>{
