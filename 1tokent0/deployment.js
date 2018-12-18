@@ -2,11 +2,12 @@ const {modifyPackage,putFilesToOss,saveHash,pullT0Project,buildT0,sign,installPr
 
 function startDeployment(){
     if(process.argv.length<5){
-        console.log('ERROR: at least 5 argvs(node ./deployment project version env)')
+        console.log('ERROR: at least 5 argvs(node ./deployment project version env [branch])')
         return
     }
-    let [,,project,version,t0env]=process.argv
-    pullT0Project(project).then(()=>{
+    let [,,project,version,t0env,branch]=process.argv
+    if(typeof branch ==='undefined') branch='master'
+    pullT0Project(project,branch).then(()=>{
         console.log('pull t0 done')
         let config={t0env,version}
         modifyPackage({config,project}).then(res=>{
