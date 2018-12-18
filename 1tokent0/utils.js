@@ -102,10 +102,10 @@ function putFilesToOss({t0env,project}){
             OSSFolder='t0-deploy/win32'
             break
         case 'test':
-            OSSFolder='t0/test/win32'
+            OSSFolder='t0-test-deploy/win32'
             break
         case 'internal':
-            OSSFolder='t0/internal/win32'
+            OSSFolder='t0-internal-deploy/win32'
             break
         default:
             reject(`unknown enviroment ${t0env}`)
@@ -120,8 +120,7 @@ function putFilesToOss({t0env,project}){
         accessKeyId: config.accessKeyId,
         accessKeySecret: config.accessKeySecret
     })
-    let bucket=t0env==='product'?'otimg':'1token-private'
-    client.useBucket(bucket)
+    client.useBucket('otimg')
         readConfig(project).then(config=>{
             const fileNames=[`1TokenT0-Setup-${config.version}.exe`,`1TokenT0-Setup-${config.version}.exe.blockmap`,'latest.yml']
             try{
@@ -193,7 +192,7 @@ function installServerDeps(){
 function pullT0Project(project,branch){
     console.log('checking out',branch)
     return new Promise((resolve,reject)=>{
-        exec(`cd ${project} && git checkout ${branch} && git pull`,(error, stdout, stderr) => {
+        exec(`cd ${project} && git reset --hard HEAD && git checkout ${branch} && git pull`,(error, stdout, stderr) => {
             if (error) {
                 reject(error)
             }
