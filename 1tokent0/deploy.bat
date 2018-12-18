@@ -1,1 +1,1 @@
-node ./deployment.js 1token-t0 1.5.4-test-5 test 1.5.4
+node ./deployment.js 1token-t0 1.5.4 product 1.5.4

@@ -132,8 +132,9 @@ function putFilesToOss({t0env,project}){
                 if(t0env==='product'){
                     promises.push(client.put(`${downLoadFolder}/1TokenT0_Setup_v${config.version}.exe`, `${sourceFolder}/1TokenT0-Setup-${config.version}.exe`,{timeout:1800000}))
                 }
+                let checkLen=t0env==='product'?5:4
                 retryAll(promises,3).then(({ succs, fails })=>{
-                    if(succs.length===4){
+                    if(succs.length===checkLen){
                         resolve()
                     }
                     else{
