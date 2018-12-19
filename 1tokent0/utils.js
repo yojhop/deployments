@@ -44,11 +44,20 @@ function modifyPackage({config,packagePath,project}){
         const verfile = fs.readFileSync(packagePath, 'utf8')
         let obj=JSON.parse(verfile)
         Object.assign(obj,config)
+        obj.name=`${obj.name}-${config.t0env}`
+        obj.build.productName=`${obj.build.productName}${camelCase(config.t0env)}`
+        obj.build.appId=`${obj.build.appId}${config.t0env}`
         let pretty=JSON.stringify(obj,null,2)
         fs.writeFileSync(packagePath,pretty)
         resolve()
     })
     
+}
+function camelCase(str){
+    if(str.length>=0){
+        return `${str[0].toUpperCase()}${str.substring(1)}`
+    }
+    return str
 }
 function produceHash(project){
     return new Promise((resolve,reject)=>{
