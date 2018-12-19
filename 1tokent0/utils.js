@@ -62,7 +62,7 @@ function camelCase(str){
 function produceHash(project){
     return new Promise((resolve,reject)=>{
         readConfig(project).then(config=>{
-            const filePath=`./${project}/build/1TokenT0-Setup-${config.version}.exe`
+            const filePath=`./${project}/build/${config.build.productName}-Setup-${config.version}.exe`
             const sha2Promise=hashFile(filePath,algorithm = "sha256",'hex')
             const sha512Promise=hashFile(filePath,algorithm = "sha512",'base64')
             Promise.all([sha2Promise,sha512Promise]).then(res=>{
@@ -131,7 +131,7 @@ function putFilesToOss({t0env,project}){
     })
     client.useBucket('otimg')
         readConfig(project).then(config=>{
-            const fileNames=[`1TokenT0-Setup-${config.version}.exe`,`1TokenT0-Setup-${config.version}.exe.blockmap`,'latest.yml']
+            const fileNames=[`${config.build.productName}-Setup-${config.version}.exe`,`${config.build.productName}-Setup-${config.version}.exe.blockmap`,'latest.yml']
             try{
                 const promises=[]
                 promises.push(client.put(`${OSSFolder}/releaseNotes.txt`, 'releaseNotes.txt',{timeout:1800000}))
@@ -139,7 +139,7 @@ function putFilesToOss({t0env,project}){
                     promises.push(client.put(`${OSSFolder}/${file}`, `${sourceFolder}/${file}`,{timeout:1800000}))
                 }
                 if(t0env==='product'){
-                    promises.push(client.put(`${downLoadFolder}/1TokenT0_Setup_v${config.version}.exe`, `${sourceFolder}/1TokenT0-Setup-${config.version}.exe`,{timeout:1800000}))
+                    promises.push(client.put(`${downLoadFolder}/${config.build.productName}_Setup_v${config.version}.exe`, `${sourceFolder}/${config.build.productName}-Setup-${config.version}.exe`,{timeout:1800000}))
                 }
                 let checkLen=t0env==='product'?5:4
                 retryAll(promises,3).then(({ succs, fails })=>{
@@ -241,7 +241,7 @@ function readConfig(project){
 function sign(project){
     return new Promise((resolve,reject)=>{
         readConfig(project).then(config=>{
-            exec(`signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a ./${project}/build/1TokenT0-Setup-${config.version}.exe"`,(error, stdout, stderr) => {
+            exec(`signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 /a ./${project}/build/${config.build.productName}-Setup-${config.version}.exe"`,(error, stdout, stderr) => {
                 if (error) {
                     reject(error)
                 }
