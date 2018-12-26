@@ -3,7 +3,6 @@ const {exec}=require('child_process')
 const { createHash } =require( "crypto")
 const { createReadStream } =require ("fs")
 const {retryAll}=require('./promiseUtils')
-
 function cloneProject({project,user,password}){
     return new Promise((resolve,reject)=>{
         exec(`git clone http://${user}:${password}@github.com/qbtrade/${project}.git`,(error, stdout, stderr) => {
@@ -37,22 +36,25 @@ function modifyPackage({config,packagePath,project}){
             packagePath=`./${project}/package.json`
         }
         if(!packagePath||!config){
-            reject('packagePath not set or config not set')
+            reject('packagePath not set or config paths not set')
             return
         }
         const fs = require('fs')
         const verfile = fs.readFileSync(packagePath, 'utf8')
         let obj=JSON.parse(verfile)
         Object.assign(obj,config)
-        obj.name=`${obj.name}-${config.t0env}`
-        obj.build.productName=`${obj.build.productName}${camelCase(config.t0env)}`
-        obj.build.appId=`${obj.build.appId}${config.t0env}`
+        if(config.t0env!=='product'){
+            obj.name=`${obj.name}-${config.t0env}`
+            obj.build.productName=`${obj.build.productName}${camelCase(config.t0env)}`
+            obj.build.appId=`${obj.build.appId}${config.t0env}`
+        }
+        console.log('config after modified:',obj)
         let pretty=JSON.stringify(obj,null,2)
         fs.writeFileSync(packagePath,pretty)
         resolve()
     })
-    
 }
+
 function camelCase(str){
     if(str.length>=0){
         return `${str[0].toUpperCase()}${str.substring(1)}`
@@ -202,7 +204,7 @@ function installServerDeps(){
 function pullT0Project(project,branch){
     console.log('checking out',branch)
     return new Promise((resolve,reject)=>{
-        exec(`cd ${project} && git reset --hard HEAD && git checkout ${branch} && git pull`,(error, stdout, stderr) => {
+        exec(`cd ${project} && git fetch && git reset --hard HEAD && git checkout ${branch} && git pull`,(error, stdout, stderr) => {
             if (error) {
                 reject(error)
             }
