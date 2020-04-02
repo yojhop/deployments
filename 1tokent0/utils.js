@@ -211,13 +211,24 @@ function pullT0Project(project,branch){
             else{
                 resolve()
             }
-            
         })
     })
 }
 function buildT0(project){
     return new Promise((resolve,reject)=>{
         exec(`cd ${project} && npm run build`,(error, stdout, stderr) => {
+            if (error) {
+                reject(error)
+            }
+            else{
+                resolve()
+            }
+        })
+    })
+}
+function buildT032(project){
+    return new Promise((resolve,reject)=>{
+        exec(`cd ${project} && npm run build32`,(error, stdout, stderr) => {
             if (error) {
                 reject(error)
             }
@@ -257,4 +268,4 @@ function sign(project){
     })
 }
 
-module.exports= {readLocalConfig,modifyPackage,putFilesToOss,saveHash,produceHash,installDeploymentDeps,cloneProject,installProjectDeps,installServerDeps,sign,readConfig,buildT0,pullT0Project}
+module.exports= {buildT032,readLocalConfig,modifyPackage,putFilesToOss,saveHash,produceHash,installDeploymentDeps,cloneProject,installProjectDeps,installServerDeps,sign,readConfig,buildT0,pullT0Project}
