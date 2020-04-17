@@ -2,3 +2,4 @@
 T0UpdateServer/
 localConfig.yml
 node_modules/
+deploy.bat
